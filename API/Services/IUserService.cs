@@ -1,12 +1,13 @@
-﻿using API.Models;
+﻿using API.DTOs;
+using API.Models;
 
 namespace API.Services
 {
     public interface IUserService
     {
-        Task<User> Create(User user);
-        Task<User?> Authenticate(string username, string password);
-        Task<User?> GetByUsername(string username);
-        Task<User?> Update(string username, User updatedUser);
+        Task<UserDto> Register(RegisterDto registerDto);
+        Task<UserDto?> Authenticate(string username, string password);
+        Task<UserDto?> GetByUsername(string username);
+        Task<UserDto?> UpdateProfile(string username, EditProfileDto editProfileDto);
     }
 }

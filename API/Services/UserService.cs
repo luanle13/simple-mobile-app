@@ -1,58 +1,63 @@
-﻿using API.Infrastructure;
+﻿using API.DTOs;
 using API.Models;
-using BCrypt.Net;
-using Microsoft.EntityFrameworkCore;
+using API.Repositories;
+using AutoMapper;
 
 namespace API.Services
 {
     public class UserService : IUserService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IUserRepository _userRepository;
+        private readonly IMapper _mapper;
 
-        public UserService(ApplicationDbContext context)
+        public UserService(IUserRepository userRepository, IMapper mapper)
         {
-            _context = context;
+            _userRepository = userRepository;
+            _mapper = mapper;
         }
 
-        public async Task<User?> Authenticate(string username, string password)
+        public async Task<UserDto?> Authenticate(string username, string password)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(x => x.Username == username);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password)) {
                 return null;
             }
-            return user;
+            return _mapper.Map<UserDto>(user);
         }
 
-        public async Task<User?> GetByUsername(string username)
+        public async Task<UserDto?> GetByUsername(string username)
         {
-            return await _context.Users.SingleOrDefaultAsync(x => x.Username == username);
-        }
-
-        public async Task<User> Create(User user)
-        {
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            return user;
-        }
-
-        public async Task<User?> Update(string username, User updatedUser)
-        {
-            var user = await _context.Users.SingleOrDefaultAsync(x=>x.Username == username);
+            var user = await _userRepository.GetByUsernameAsync(username);
             if (user == null)
             {
                 return null;
             }
-            user.FullName = updatedUser.FullName;
-            user.Email = updatedUser.Email;
-            if (!string.IsNullOrEmpty(updatedUser.PasswordHash))
+            return _mapper.Map<UserDto>(user);
+        }
+
+        public async Task<UserDto> Register(RegisterDto registerDto)
+        {
+            var user = _mapper.Map<User>(registerDto);
+            user.Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
+            await _userRepository.CreateAsync(user);
+            return _mapper.Map<UserDto>(user);
+        }
+
+        public async Task<UserDto?> UpdateProfile(string username, EditProfileDto editProfileDto)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            if (user == null)
             {
-                user.PasswordHash= BCrypt.Net.BCrypt.HashPassword(updatedUser.PasswordHash);
+                return null;
             }
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-            return user;
+            user.FullName = editProfileDto.FullName;
+            user.Email = editProfileDto.Email;
+            if (!string.IsNullOrEmpty(editProfileDto.Password))
+            {
+                user.Password = BCrypt.Net.BCrypt.HashPassword(editProfileDto.Password);
+            }
+            await _userRepository.UpdateAsync(user);
+            return _mapper.Map<UserDto>(user);
         }
     }
 }
