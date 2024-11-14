@@ -26,8 +26,13 @@ namespace API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto user)
         {
+            var checkUser = await _userService.GetByUsername(user.Username);
+            if (checkUser != null)
+            {
+                return BadRequest(new { message = "User exists" });
+            }
             var newUser = await _userService.Register(user);
-            return Ok(newUser.Id);
+            return Ok(new { id = newUser.Id });
         }
 
         [HttpPost("login")]

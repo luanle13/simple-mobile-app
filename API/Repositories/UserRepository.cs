@@ -17,7 +17,7 @@ namespace API.Repositories
 
         public async Task<User?> GetByUsernameAsync(string username)
         {
-            return await _context.Users.SingleOrDefaultAsync(x => x.Username == username);
+            return await _context.Users.FirstOrDefaultAsync(x => x.Username == username);
         }
 
         public async Task<User> UpdateAsync(User user)
